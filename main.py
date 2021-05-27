@@ -1,8 +1,8 @@
 from subprocess import (Popen, PIPE)
 from re import match as re_match
 from requests import (get, HTTPError)
-from os import (name as os_name, rename)
-from os.path import (exists as path_exists)
+from os import (name as os_name, makedirs)
+from os.path import (exists as path_exists, join as path_join)
 from termcolor import colored
 from zipfile import ZipFile
 from io import BytesIO
@@ -10,9 +10,35 @@ from io import BytesIO
 
 class ChromeDriver(object):
 
-    def __init__(self):
+    selenium_browser_args = [
+        'headless',
+        'ignore-certificate-errors',
+        'allow-running-insecure-content',
+        'allow-insecure-localhost',
+        'window-size=1920,1080',
+        'disable-extensions',
+        "proxy-server='direct://'",
+        'proxy-bypass-list=*',
+        'start-maximized',
+        'disable-gpu',
+        'disable-dev-shm-usage',
+        'no-sandbox',
+        # f'--proxy-server={ip_address}',  # https://www.browserstack.com/guide/set-proxy-in-selenium
+    ]
+
+    def __init__(self,
+                 ip_address='127.0.0.1',
+                 hostname='localhost',
+                 port=80,
+                 context_path='/'
+                 ):
+        self.context_path = context_path
+        self.ip_address = ip_address
+        self.port = port
+        self.hostname = hostname
         self.host: str = f'https://{self.object_name}.storage.googleapis.com'
         self.chrome_version: str = self.__get_chrome_version__
+        # self.chrome_version: str = self.__get_chrome_version__
         self.download_filename: str = f"{self.object_name}_{self.operating_system_name}{self.operating_system_type}.zip"
         self.extracting_filename = self.download_filename.replace('.zip', f"_{self.chrome_version}.zip")
         self.driver_repo_url: str = f"{self.host}/{self.chrome_version}/{self.download_filename}"
@@ -53,11 +79,12 @@ class ChromeDriver(object):
         try:
             if not path_exists(self.extracting_filename):
                 raise FileExistsError
+            makedirs(f"{self.object_name}_{self.chrome_version}", exist_ok=True)
+            # chdir(f"{self.object_name}_{self.chrome_version}")
             with open(self.extracting_filename, 'rb+') as file:
                 z = ZipFile(BytesIO(file.read()))
-                z.extractall()
+                z.extractall(f"{self.object_name}_{self.chrome_version}")
             if path_exists(self.object_name) is True:
-                rename(self.object_name, f"{self.object_name}_{self.chrome_version}")
                 print(colored(
                     text="Extraction successfully!",
                     color="green"
