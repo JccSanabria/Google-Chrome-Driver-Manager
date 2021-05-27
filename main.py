@@ -1,7 +1,7 @@
 from subprocess import (Popen, PIPE)
 from re import match as re_match
 from requests import (get, HTTPError)
-from os import name as os_name
+from os import (name as os_name, rename)
 from os.path import (exists as path_exists)
 from termcolor import colored
 from zipfile import ZipFile
@@ -36,7 +36,10 @@ class ChromeDriver(object):
                 for chunk in response.iter_content(chunk_size=128):
                     fd.write(chunk)
         except Exception as error_message:
-            message = str(error_message.args[0])
+            print(colored(
+                text=str(error_message.args[0]),
+                color='red'
+            ))
         finally:
             status = path_exists(self.extracting_filename)
             print(colored(
@@ -54,6 +57,7 @@ class ChromeDriver(object):
                 z = ZipFile(BytesIO(file.read()))
                 z.extractall()
             if path_exists(self.object_name) is True:
+                rename(self.object_name, f"{self.object_name}_{self.chrome_version}")
                 print(colored(
                     text="Extraction successfully!",
                     color="green"
